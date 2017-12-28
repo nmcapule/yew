@@ -6,7 +6,7 @@ Yew is a modern Rust framework inspired by Elm and ReactJS.
 
 ### Rust to WASM compilation
 
-This framework designed to be compiled into modern browsers' runtimes: WASM, Asm.js, emscripten.
+This framework designed to be compiled into modern browsers' runtimes: wasm, asm.js, emscripten.
 
 ### Clean MVC approach inspired by Elm
 
@@ -14,21 +14,21 @@ This framework designed to be compiled into modern browsers' runtimes: WASM, Asm
 struct Model { }
 
 enum Msg {
-  DoIt,
+    DoIt,
 }
 
-fn update(model: &mut Model, msg: Msg) {
-  match msg {
-      Msg::DoIt => {
-         // Update your model on events
-      }
-  }
+fn update(_: &mut Context<Msg>, model: &mut Model, msg: Msg) {
+    match msg {
+        Msg::DoIt => {
+            // Update your model on events
+        }
+    }
 }
 
 fn view(model: &Model) -> html::Html<Msg> {
     html! {
         // Render your model here
-        <button onclick=|_| Msg::DoIt,></button>
+        <button onclick=|_| Msg::DoIt,>{ "Click me!" }</button>
     }
 }
 ```
@@ -91,13 +91,21 @@ fn view(model: &Model) -> Html<Msg> {
 ### Services
 
 Pluggable services that allow you to call external APIs like:
-`Timeout`, `Interval`, `Fetch`, `WebSocket`.
+JavaScript alerts, timeout, storage, fetches and websockets.
 It's a handy alternative to subscriptions.
 
-> Only `Timeout` implemented. Others in development.
+Implemented:
+* `IntervalService`
+* `TimeoutService`
+* `StorageService`
+* `AlertService`
+
+In development:
+* `FetchService`
+* `WebSocketService`
 
 ```rust
-use yew::services::{Timeout, TimeoutHandle, Handle};
+use yew::services::timeout::TimeoutService;
 
 fn update(context: &mut Context<Msg>, model: &mut Model, msg: Msg) {
     match msg {
@@ -113,7 +121,8 @@ fn update(context: &mut Context<Msg>, model: &mut Model, msg: Msg) {
 
 ## Running the examples
 
-There are three examples to check how it works: [counter], [todomvc] and [timer].
+There are four examples to check how it works:
+[counter], [timer], [todomvc] and [crm].
 
 To run them you need to have [cargo-web] installed as well as a suitable target
 for the Rust compiler to generate web output. By default cargo-web uses
@@ -135,4 +144,5 @@ To run an optimised build instead of a debug build use:
 [counter]: examples/counter
 [todomvc]: examples/todomvc
 [timer]: examples/timer
+[crm]: examples/crm
 [cargo-web]: https://github.com/koute/cargo-web

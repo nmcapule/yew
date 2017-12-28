@@ -1,22 +1,17 @@
 use std::time::Duration;
 use stdweb::Value;
 use html::Context;
+use super::{Task, to_ms};
 
-pub trait Handle {
-    fn cancel(&mut self);
-}
+pub struct TimeoutHandle(Option<Value>);
 
-pub struct TimeoutHandle {
-    timeout_id: Option<Value>,
-}
-
-pub trait Timeout<MSG> {
+pub trait TimeoutService<MSG> {
     fn timeout<F>(&mut self, duration: Duration, converter: F) -> TimeoutHandle
     where
         F: Fn() -> MSG + 'static;
 }
 
-impl<MSG: 'static> Timeout<MSG> for Context<MSG> {
+impl<MSG: 'static> TimeoutService<MSG> for Context<MSG> {
     fn timeout<F>(&mut self, duration: Duration, converter: F) -> TimeoutHandle
     where
         F: Fn() -> MSG + 'static,
@@ -26,29 +21,30 @@ impl<MSG: 'static> Timeout<MSG> for Context<MSG> {
             let msg = converter();
             tx.send(msg);
         };
-        let mut ms = duration.subsec_nanos() / 1_000_000;
-        ms += duration.as_secs() as u32 * 1000;
-        let id = js! {
+        let ms = to_ms(duration);
+        let handle = js! {
             var callback = @{callback};
             let action = function() {
                 callback();
                 callback.drop();
             };
-            let duration = @{ms};
-            return setTimeout(callback, duration);
+            let delay = @{ms};
+            return {
+                timeout_id: setTimeout(action, delay),
+                callback,
+            };
         };
-        TimeoutHandle {
-            timeout_id: Some(id),
-        }
+        TimeoutHandle(Some(handle))
     }
 }
 
-impl Handle for TimeoutHandle {
+impl Task for TimeoutHandle {
     fn cancel(&mut self) {
-        let timeout_id = self.timeout_id.take().expect("tried to cancel timeout twice");
+        let handle = self.0.take().expect("tried to cancel timeout twice");
         js! {
-            var id = @{timeout_id};
-            clearTimeout(id);
+            var handle = @{handle};
+            clearTimeout(handle.timeout_id);
+            handle.callback.drop();
         }
     }
 }
